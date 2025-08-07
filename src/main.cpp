@@ -23,7 +23,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "ZMMR", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "SKIBIDY TOILET", NULL, NULL);
     if (window == NULL)
     {
         cout << "Failed to open GLFW window" << endl;
