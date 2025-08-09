@@ -65,19 +65,6 @@ vec3 getRayDir(vec2 fragCoord, vec2 res, vec3 ro, vec3 lookAt, float zoom) {
 }
 
 void main(void) {
-    //animations to move points around
-    points[20] = vec3(cos(iTime*2.0), 1.0, sin(iTime*2.0));
-    points[21] = vec3(cos(iTime*2.0), 0.7, sin(iTime*2.0));
-    points[7].y = cos((iTime+points[7].x)*5.0)*0.05+0.3;//arm wave
-    points[8].y = cos((iTime+points[8].x)*5.0)*0.1+0.3;
-    points[9].y = cos((iTime+points[9].x)*5.0)*0.15+0.3;
-    points[10].y = cos((iTime+points[10].x)*5.0)*0.05+0.3;//arm wave
-    points[11].y = cos((iTime+points[11].x)*5.0)*0.1+0.3;
-    points[12].y = cos((iTime+points[12].x)*5.0)*0.15+0.3;
-    
-    for (int i = 0; i < NUM_POINTS; i++) {
-        points[i].xz += sin((iTime+points[i].y)*5.0)*0.05;
-    }
     //actual code
     float radius = 4.0;
     float angle = iTime * 0.6;
