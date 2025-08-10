@@ -45,22 +45,14 @@ int main()
         return -1;
     }
 
-    // build and compile our shader program
+    // build and compile shader program
     // ------------------------------------
-    Shader ourShader("shaders/3.4.raymarcher.vs", "shaders/3.4.raymarcher.fs"); // you can name your shader files however you like
+    Shader ourShader("shaders/3.4.screenquad.vert", "shaders/3.4.raymarcher.frag"); // you can name your shader files however you like
 
-    // position attribute
+    // vaos need to be bound because of biolerplating shizzle (even if not used)
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    // glBindVertexArray(0);
-
 
     // render loop
     // -----------

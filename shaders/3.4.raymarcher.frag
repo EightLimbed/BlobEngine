@@ -1,7 +1,11 @@
-#version 330 core
+#version 430 core
 out vec4 FragColor;
   
 uniform float iTime; // the time variable to animate from
+
+layout(std430, binding = 0) buffer Colors {
+    vec4 colorData[];
+};
 
 #define NUM_POINTS 22
 
@@ -50,7 +54,8 @@ float get_sdf(vec3 p) {
         //-0.1 represents radius
         float d = length(max(abs(p-points[i])-0.1,0.0));
         //length(p-points[i])-0.1;
-        sdf = softmin(sdf,d,9.0); //9.0 represents pull tightness, could add optional tightness override value to points, for forcing higher detail in certain areas
+        sdf = softmin(sdf,d,9.0); //9.0 represents pull tightness, could add optional tightness override value to points, for forcing higher detail in certain areas.
+        //possibly a hash table that corresponds one material value to both tightness, and procedural texture.
     }
     return sdf;
 }
