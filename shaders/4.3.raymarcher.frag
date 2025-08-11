@@ -6,6 +6,9 @@ uniform float iTime; // the time variable to animate from
 layout(std430, binding = 0) buffer ChunkData {
     uint numPoints;
     vec4 points[];
+    uint xsort[];
+    uint ysort[];
+    uint zsort[];
 };
 
 //softmin meatball kernel
@@ -20,7 +23,7 @@ float get_sdf(vec3 p) {
         //-0.1 represents radius
         //float d = length(max(abs(p-points[i])-0.1,0.0));S
         float d = length(p-points[i].xyz/6.0)-0.1; //arbitrary 6.0 applied to get all points in view for testing purposes
-        sdf = softmin(sdf,d,points[i].w);
+        sdf = softmin(sdf,d,points[i].w); //.w represents the inverse of the pull strength
         //possibly a hash table that corresponds one material value to both tightness, and procedural texture.
     }
     return sdf;

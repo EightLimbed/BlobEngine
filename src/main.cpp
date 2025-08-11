@@ -58,7 +58,7 @@ int main()
     // temp terrain compute shader, here for testing purposes.
     // Calculate buffer size: 4 bytes for uint + max points * 16 bytes each
     size_t maxPoints = 16 * 16 * 16;
-    size_t ssboSize = sizeof(GLuint) + maxPoints * sizeof(float)*4;
+    size_t ssboSize = (maxPoints+1) * sizeof(GLuint)*3 + maxPoints * sizeof(float)*4;
 
     GLuint ssbo;
     glGenBuffers(1, &ssbo);
@@ -70,7 +70,7 @@ int main()
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
 
-    // bind SSBO to binding point 0 (matches your layout(binding = 0))
+    // bind SSBO to binding point 0 (matches layout(binding = 0))
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
 
     // use compute shader
@@ -86,6 +86,7 @@ int main()
         (16 + 4 - 1) / 4,
         (16 + 4 - 1) / 4
     );
+    //error
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         std::cout << "OpenGL error after dispatch: " << err << std::endl;

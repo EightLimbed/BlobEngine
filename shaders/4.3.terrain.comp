@@ -5,6 +5,9 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in; //64 local thre
 layout(std430, binding = 0) buffer ChunkData {
     uint numPoints;
     vec4 points[];
+    uint xsort[];
+    uint ysort[];
+    uint zsort[];
 };
 
 // helper functions
@@ -90,7 +93,7 @@ void main() {
     if (noise2D(vec2(id.x, id.z)) * 16.0 > float(id.y)) {
         uint newIndex = atomicAdd(numPoints, 1u);
         if (newIndex < MAX_POINTS) {
-            points[newIndex] = vec4(vec3(id), 18.0);
+            points[newIndex] = vec4(vec3(id), 9.0);
         }
     }
 }
