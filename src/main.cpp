@@ -47,8 +47,8 @@ int main()
 
     // build and compile shader program
     // ------------------------------------
-    Shader ScreenShaders("shaders/3.4.screenquad.vert", "shaders/3.4.raymarcher.frag");
-    Shader ComputeShader("shaders/3.4.terrain.comp");
+    Shader ScreenShaders("shaders/4.3.screenquad.vert", "shaders/4.3.raymarcher.frag");
+    Shader ComputeShader("shaders/4.3.terrain.comp");
 
     // vaos need to be bound because of biolerplating shizzle (even if not used)
     GLuint vao;

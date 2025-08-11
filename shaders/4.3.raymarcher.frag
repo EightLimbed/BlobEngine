@@ -18,8 +18,8 @@ float get_sdf(vec3 p) {
     for (int i = 0; i < 64; i++) {
         //can use any base sdf shape
         //-0.1 represents radius
-        //float d = length(max(abs(p-points[i])-0.1,0.0));
-        float d = length(p-points[i].xyz/6.0)-0.1; //arbitrary /2.0 applied to get all points in view for testing purposes
+        //float d = length(max(abs(p-points[i])-0.1,0.0));S
+        float d = length(p-points[i].xyz/6.0)-0.1; //arbitrary 6.0 applied to get all points in view for testing purposes
         sdf = softmin(sdf,d,points[i].w);
         //possibly a hash table that corresponds one material value to both tightness, and procedural texture.
     }
@@ -42,7 +42,7 @@ void main(void) {
         return;
     }
     //actual code
-    float radius = 4.0;
+    float radius = 5.0;
     float angle = iTime * 0.6;
     vec3 ro = vec3(radius * cos(angle), 0.3, radius * sin(angle));
     vec3 lookAt = vec3(0.0, 0.3, 0.0);
@@ -65,7 +65,5 @@ void main(void) {
 
     if (hit) {
         FragColor = vec4(vec3(0.6,1.1,1.1)-vec3(t/5.0),1.0);
-    } else {
-        FragColor = vec4(0.0);
     }
 }
