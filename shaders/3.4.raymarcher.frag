@@ -3,44 +3,10 @@ out vec4 FragColor;
   
 uniform float iTime; // the time variable to animate from
 
-layout(std430, binding = 0) buffer Colors {
-    vec4 colorData[];
+layout(std430, binding = 0) buffer ChunkData {
+    uint numPoints;
+    vec4 points[];
 };
-
-#define NUM_POINTS 22
-
-vec3 points[NUM_POINTS] = vec3[](
-
-    vec3( 0.0, 1.0, 0.0),
-    vec3( 0.1, 0.95, 0.0),
-    vec3(-0.1, 0.95, 0.0),
-    vec3( 0.05, 0.85, 0.0),
-    vec3(-0.05, 0.85, 0.0),
-
-    vec3( 0.0, 0.4, 0.0),
-    vec3( 0.0, 0.1, 0.0),
-
-    vec3(-0.2, 0.3, 0.0),
-    vec3(-0.5, 0.3, 0.0),
-    vec3(-0.8, 0.3, 0.0),
-
-    vec3( 0.2, 0.3, 0.0),
-    vec3( 0.5, 0.3, 0.0),
-    vec3( 0.8, 0.3, 0.0),
-
-    vec3(-0.1, -0.3, 0.0),
-    vec3(-0.25, -0.6, 0.0),
-    vec3(-0.3, -0.9, 0.0),
-
-    vec3( 0.1, -0.3, 0.0),
-    vec3( 0.25, -0.6, 0.0),
-    vec3( 0.3, -0.9, 0.0),
-
-    vec3(0.0, -0.1, 0.0),
-    
-    vec3(0.0, 2.0, 0.0),
-    vec3(0.0, 1.9, 0.0)
-);
 
 //softmin meatball kernel
 float softmin(float a, float b, float k) {
@@ -49,12 +15,12 @@ float softmin(float a, float b, float k) {
 
 float get_sdf(vec3 p) {
     float sdf = 1e6;
-    for (int i = 0; i < NUM_POINTS; i++) {
+    for (int i = 0; i < 64; i++) {
         //can use any base sdf shape
         //-0.1 represents radius
-        float d = length(max(abs(p-points[i])-0.1,0.0));
-        //length(p-points[i])-0.1;
-        sdf = softmin(sdf,d,9.0); //9.0 represents pull tightness, could add optional tightness override value to points, for forcing higher detail in certain areas.
+        //float d = length(max(abs(p-points[i])-0.1,0.0));
+        float d = length(p-points[i].xyz/6.0)-0.1; //arbitrary /2.0 applied to get all points in view for testing purposes
+        sdf = softmin(sdf,d,points[i].w);
         //possibly a hash table that corresponds one material value to both tightness, and procedural texture.
     }
     return sdf;
@@ -70,6 +36,11 @@ vec3 getRayDir(vec2 fragCoord, vec2 res, vec3 ro, vec3 lookAt, float zoom) {
 }
 
 void main(void) {
+    //debug check for empty chunk
+    if (numPoints == 0u) {
+        FragColor = vec4(1.0, 0.0, 0.0, 1.0); // red means no points
+        return;
+    }
     //actual code
     float radius = 4.0;
     float angle = iTime * 0.6;
@@ -93,7 +64,7 @@ void main(void) {
     }
 
     if (hit) {
-        FragColor = vec4(vec3(0.7,1.2,1.2)-vec3(t/5.0),1.0);
+        FragColor = vec4(vec3(0.6,1.1,1.1)-vec3(t/5.0),1.0);
     } else {
         FragColor = vec4(0.0);
     }
