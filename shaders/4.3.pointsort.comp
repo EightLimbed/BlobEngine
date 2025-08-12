@@ -1,7 +1,9 @@
-//breaks apart vectors and creates a list of their indices for each cardinal direction, before sorting them by that direction.
+// breaks apart vectors and creates a list of their indices for each cardinal direction, before sorting them by that direction.
 #version 430 core
 
-layout(local_size_x = 22, local_size_y = 3, local_size_z = 1) in; //bad approximation of 64 thread goal
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+// ts pmo but ensure local_size_x >= ceil(numPoints / 2) because this sorting algorithm only works with a single thread pool for some reason
+// or choose a larger value and idle extra threads. (evil)
 
 layout(std430, binding = 0) buffer ChunkData {
     uint numPoints;
@@ -9,53 +11,61 @@ layout(std430, binding = 0) buffer ChunkData {
 };
 
 layout(std430, binding = 1) buffer ChunkDataSort {
-    uint isort[];
+    uint isort[]; // flattened: [0..numPoints-1] = x-indexes, [numPoints..2*numPoints-1] = y-indexes, [2*numPoints..3*numPoints-1] = z-indexes
 };
 
 void main() {
-    uint gid = gl_GlobalInvocationID.x; // index in the global buffer
-    uint lid = gl_LocalInvocationID.x;  // index inside this workgroup
-    uint dir = gl_GlobalInvocationID.y; // direction (1,2, or 3)
-    float sdata[];
-    // load from global into shared memory
-    // gets vector direction based on integer
-    if (dir == 1) {
-        sdata[lid] = points[gid].x;
-    }
-    else if (dir == 2) {
-        sdata[lid] = points[gid].y;
-    }
-    else {
-        sdata[lid] = points[gid].z;
-    }
-    //gets int list
-    uint idata[lid*dir] = isort;
+    uint lid = gl_LocalInvocationID.x; // thread index inside the workgroup
+    uint n = numPoints;
+    if (n <= 1u) return;
 
-    // ensure all threads have loaded
-    barrier();
+    // compute how many comparing pairs could exist per phase
+    // for a given phase (even/odd), there are floor((n - phase) / 2) pairs.
+    // each thread will handle pair i = lid*2 + phase -> compare index i and i+1
+    // just run 'n' passes to guarantee sorting.
 
-    // odd-even (brick) sort inside shared memory
-    for (uint pass = 0u; pass < numPoints; ++pass) {
-        uint phase = pass & 1u; // 0 = even phase, 1 = odd phase
+    // sort each axis in parallel by performing the compare+swap on each axis
+    for (uint pass = 0u; pass < n; ++pass) {
+        uint phase = pass & 1u;
         uint i = lid * 2u + phase;
 
-        if (i + 1u < numPoints) {
-            uint ie = i; //even index
-            uint io = (i + 1u); //odd index
-            // floats being compared
-            float a = sdata[i];
-            float b = sdata[(i + 1u)];
-            // ints to shuffle
-            uint ia = sdata[i]
-            uint ib
-            if (a > b) {
-                sdata[i] = b;
-                sdata[(i + 1u)] = a;
+        if (i + 1u < n) {
+            // compare x
+            float ax = points[ isort[0u * n + i] ].x;
+            float bx = points[ isort[0u * n + i + 1u] ].x;
+            if (ax > bx) {
+                // swap indices in-place in the flattened isort
+                uint ia = isort[0u * n + i];
+                uint ib = isort[0u * n + i + 1u];
+                isort[0u * n + i] = ib;
+                isort[0u * n + i + 1u] = ia;
+            }
+
+            // compare y
+            float ay = points[ isort[1u * n + i] ].y;
+            float by = points[ isort[1u * n + i + 1u] ].y;
+            if (ay > by) {
+                uint ia = isort[1u * n + i];
+                uint ib = isort[1u * n + i + 1u];
+                isort[1u * n + i] = ib;
+                isort[1u * n + i + 1u] = ia;
+            }
+
+            // compare z
+            float az = points[ isort[2u * n + i] ].z;
+            float bz = points[ isort[2u * n + i + 1u] ].z;
+            if (az > bz) {
+                uint ia = isort[2u * n + i];
+                uint ib = isort[2u * n + i + 1u];
+                isort[2u * n + i] = ib;
+                isort[2u * n + i + 1u] = ia;
             }
         }
-        barrier(); // sync after each pass
-    }
 
-    // Write back to global memory
-    isort[gid*dir] = sdata[lid*dir];
+        // ensure SSBO writes are visible before next pass and synchronize threads in the workgroup
+        // memoryBarrierBuffer makes sure stores are visible to subsequent loads
+        // memory mishaps are bad
+        memoryBarrierBuffer();
+        barrier();
+    }
 }

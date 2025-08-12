@@ -84,7 +84,7 @@ int main()
     // use terrain compute shader
     TerrainShader.use();
 
-    // Dispatch compute shader threads, based on thread pool size of 64.
+    // dispatch compute shader threads, based on thread pool size of 64.
     glDispatchCompute(
         (16 + 4 - 1) / 4,
         (16 + 4 - 1) / 4,
@@ -94,12 +94,8 @@ int main()
     // use point sorting compute shader
     SortShader.use();
 
-    // Dispatch compute shader threads, based on thread pool size of 64.
-    glDispatchCompute(
-        (16 + 22 - 1) / 22,
-        (16 + 3 - 1) / 3,
-        (16 + 1 - 1) / 1
-    );
+    // dispatch compute shader threads, based on thread pool size of 64.
+    glDispatchCompute(maxPoints, 1, 1);
 
     // compute error check
     GLenum err = glGetError();
@@ -123,7 +119,7 @@ int main()
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         
-        //Compute shaders go here
+        // compute shaders go here
 
         // render the triangle
         ScreenShaders.use();
