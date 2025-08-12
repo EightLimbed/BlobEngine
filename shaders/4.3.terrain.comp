@@ -98,8 +98,8 @@ void main() {
             points[newIndex] = vec4(vec3(id), 9.0);
             // fills index array
             uint posi = id.z + 16u * (id.y + 16u * id.x);
-            isort[newIndex*3] = posi;
-            isort[newIndex*2] = posi;
+            isort[newIndex+2*numPoints] = posi;
+            isort[newIndex+numPoints] = posi;
             isort[newIndex] = posi;
         }
     }

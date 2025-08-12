@@ -9,7 +9,6 @@ layout(std430, binding = 0) buffer ChunkData {
 };
 
 layout(std430, binding = 1) buffer ChunkDataSort {
-    // multiply index by 1-3 for each direction
     uint isort[];
 };
 
