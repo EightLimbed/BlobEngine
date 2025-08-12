@@ -1,12 +1,61 @@
 //breaks apart vectors and creates a list of their indices for each cardinal direction, before sorting them by that direction.
 #version 430 core
 
-layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in; //64 local threads is apparently sweet spot
+layout(local_size_x = 22, local_size_y = 3, local_size_z = 1) in; //bad approximation of 64 thread goal
 
 layout(std430, binding = 0) buffer ChunkData {
     uint numPoints;
     vec4 points[];
-    uint xsort[];
-    uint ysort[];
-    uint zsort[];
 };
+
+layout(std430, binding = 1) buffer ChunkDataSort {
+    uint isort[];
+};
+
+void main() {
+    uint gid = gl_GlobalInvocationID.x; // index in the global buffer
+    uint lid = gl_LocalInvocationID.x;  // index inside this workgroup
+    uint dir = gl_GlobalInvocationID.y; // direction (1,2, or 3)
+    float sdata[];
+    // load from global into shared memory
+    // gets vector direction based on integer
+    if (dir == 1) {
+        sdata[lid] = points[gid].x;
+    }
+    else if (dir == 2) {
+        sdata[lid] = points[gid].y;
+    }
+    else {
+        sdata[lid] = points[gid].z;
+    }
+    //gets int list
+    uint idata[lid*dir] = isort;
+
+    // ensure all threads have loaded
+    barrier();
+
+    // odd-even (brick) sort inside shared memory
+    for (uint pass = 0u; pass < numPoints; ++pass) {
+        uint phase = pass & 1u; // 0 = even phase, 1 = odd phase
+        uint i = lid * 2u + phase;
+
+        if (i + 1u < numPoints) {
+            uint ie = i; //even index
+            uint io = (i + 1u); //odd index
+            // floats being compared
+            float a = sdata[i];
+            float b = sdata[(i + 1u)];
+            // ints to shuffle
+            uint ia = sdata[i]
+            uint ib
+            if (a > b) {
+                sdata[i] = b;
+                sdata[(i + 1u)] = a;
+            }
+        }
+        barrier(); // sync after each pass
+    }
+
+    // Write back to global memory
+    isort[gid*dir] = sdata[lid*dir];
+}

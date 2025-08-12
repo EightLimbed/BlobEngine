@@ -5,9 +5,10 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in; //64 local thre
 layout(std430, binding = 0) buffer ChunkData {
     uint numPoints;
     vec4 points[];
-    uint xsort[];
-    uint ysort[];
-    uint zsort[];
+};
+
+layout(std430, binding = 1) buffer ChunkDataSort {
+    uint isort[];
 };
 
 // helper functions
@@ -91,9 +92,15 @@ void main() {
     if (id.x >= 16u || id.y >= 16u || id.z >= 16u) return;
 
     if (noise2D(vec2(id.x, id.z)) * 16.0 > float(id.y)) {
+        // atomic add makes sure threads don't overwrite eachother
         uint newIndex = atomicAdd(numPoints, 1u);
         if (newIndex < MAX_POINTS) {
             points[newIndex] = vec4(vec3(id), 9.0);
+            // fills index array
+            uint posi = id.z + 16u * (id.y + 16u * id.x);
+            isort[newIndex*3] = posi;
+            isort[newIndex*2] = posi;
+            isort[newIndex] = posi;
         }
     }
 }

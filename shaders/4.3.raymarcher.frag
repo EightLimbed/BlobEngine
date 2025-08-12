@@ -6,9 +6,11 @@ uniform float iTime; // the time variable to animate from
 layout(std430, binding = 0) buffer ChunkData {
     uint numPoints;
     vec4 points[];
-    uint xsort[];
-    uint ysort[];
-    uint zsort[];
+};
+
+layout(std430, binding = 1) buffer ChunkDataSort {
+    // multiply index by 1-3 for each direction
+    uint isort[];
 };
 
 //softmin meatball kernel

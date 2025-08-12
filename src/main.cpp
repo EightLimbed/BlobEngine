@@ -48,7 +48,8 @@ int main()
     // build and compile shader program
     // ------------------------------------
     Shader ScreenShaders("shaders/4.3.screenquad.vert", "shaders/4.3.raymarcher.frag");
-    Shader ComputeShader("shaders/4.3.terrain.comp");
+    Shader TerrainShader("shaders/4.3.terrain.comp");
+    Shader SortShader("shaders/4.3.pointsort.comp");
 
     // vaos need to be bound because of biolerplating shizzle (even if not used)
     GLuint vao;
@@ -56,29 +57,32 @@ int main()
     glBindVertexArray(vao);
 
     // temp terrain compute shader, here for testing purposes.
-    // Calculate buffer size: 4 bytes for uint + max points * 16 bytes each
+    // calculate buffer size: 4 bytes for uint + max points * 16 bytes each
     size_t maxPoints = 16 * 16 * 16;
-    size_t ssboSize = (maxPoints+1) * sizeof(GLuint)*3 + maxPoints * sizeof(float)*4;
+    // point cloud buffer
+    size_t ssboSize0 = sizeof(GLuint) + maxPoints * sizeof(float)*4;
 
-    GLuint ssbo;
-    glGenBuffers(1, &ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, ssboSize, nullptr, GL_DYNAMIC_DRAW);
+    GLuint ssbo0;
+    glGenBuffers(1, &ssbo0);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo0);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, ssboSize0, nullptr, GL_DYNAMIC_DRAW);
 
     GLuint zero = 0;
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &zero);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo0);
 
-    // bind SSBO to binding point 0 (matches layout(binding = 0))
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+    // sorted indices buffer
+    size_t ssboSize1 = maxPoints * sizeof(GLuint) * 3;
+    GLuint ssbo1;
+    glGenBuffers(1, &ssbo1);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo1);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, ssboSize1, nullptr, GL_DYNAMIC_DRAW);
 
-    // use compute shader
-    ComputeShader.use();
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo1);
 
-    // empty buffers just in case
-    std::vector<GLuint> zeroBuffer(ssboSize / sizeof(GLuint), 0);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, ssboSize, zeroBuffer.data());
+    // use terrain compute shader
+    TerrainShader.use();
 
     // Dispatch compute shader threads, based on thread pool size of 64.
     glDispatchCompute(
@@ -86,7 +90,18 @@ int main()
         (16 + 4 - 1) / 4,
         (16 + 4 - 1) / 4
     );
-    //error
+
+    // use point sorting compute shader
+    SortShader.use();
+
+    // Dispatch compute shader threads, based on thread pool size of 64.
+    glDispatchCompute(
+        (16 + 22 - 1) / 22,
+        (16 + 3 - 1) / 3,
+        (16 + 1 - 1) / 1
+    );
+
+    // compute error check
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         std::cout << "OpenGL error after dispatch: " << err << std::endl;
