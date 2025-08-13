@@ -94,8 +94,8 @@ int main()
     // use point sorting compute shader
     SortShader.use();
 
-    // dispatch compute shader threads, based on thread pool size of 64.
-    glDispatchCompute(maxPoints, 1, 1);
+    // dispatch compute shader threads, exactly three (one for each axis being sorted)
+    glDispatchCompute(3, 1, 1);
 
     // compute error check
     GLenum err = glGetError();

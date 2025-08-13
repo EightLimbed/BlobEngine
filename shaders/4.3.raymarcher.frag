@@ -23,7 +23,7 @@ float get_sdf(vec3 p) {
         //can use any base sdf shape
         //-0.1 represents radius
         //float d = length(max(abs(p-points[i])-0.1,0.0));S
-        float d = length(p-points[i].xyz/6.0)-0.1; //arbitrary 6.0 applied to get all points in view for testing purposes
+        float d = length(p-points[i].xyz)-0.1;
         sdf = softmin(sdf,d,points[i].w); //.w represents the inverse of the pull strength
         //possibly a hash table that corresponds one material value to both tightness, and procedural texture.
     }
@@ -40,11 +40,6 @@ vec3 getRayDir(vec2 fragCoord, vec2 res, vec3 ro, vec3 lookAt, float zoom) {
 }
 
 void main(void) {
-    //debug check for empty chunk
-    if (numPoints == 0u) {
-        FragColor = vec4(1.0, 0.0, 0.0, 1.0); // red means no points
-        return;
-    }
     //actual code
     float radius = 5.0;
     float angle = iTime * 0.6;
@@ -54,20 +49,15 @@ void main(void) {
 
     float t = 0.0;
     float dist = 1.0;
-    bool hit = false;
-
+    FragColor = vec4(0.2,0.2,0.2,1.0);
     for (int i = 0; i < 128; i++) {
         vec3 p = ro + t * rd;
         float d = get_sdf(p);
         if (d < 0.001) {
-            hit = true;
+            FragColor = vec4(vec3(0.6,1.1,1.1)-vec3(t/4.0),1.0);
             break;
         }
         t += d;
         if (t > 40.0) break;
-    }
-
-    if (hit) {
-        FragColor = vec4(vec3(0.6,1.1,1.1)-vec3(t/5.0),1.0);
     }
 }

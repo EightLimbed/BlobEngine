@@ -95,7 +95,7 @@ void main() {
         // atomic add makes sure threads don't overwrite eachother
         uint newIndex = atomicAdd(numPoints, 1u);
         if (newIndex < MAX_POINTS) {
-            points[newIndex] = vec4(vec3(id), 9.0);
+            points[newIndex] = vec4(vec3(id-8.0)/6.0, 9.0);
             // fills index array
             uint posi = id.z + 16u * (id.y + 16u * id.x);
             isort[newIndex+2*numPoints] = posi;

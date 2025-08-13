@@ -1,9 +1,6 @@
-// breaks apart vectors and creates a list of their indices for each cardinal direction, before sorting them by that direction.
 #version 430 core
-
-layout(local_size_x = min((numPoints+1)/2, 1024), local_size_y = max(1, (numPoints+1)/2048), local_size_z = 1) in;
-// ts pmo but ensure local_size_x >= ceil(numPoints / 2) because this sorting algorithm only works with a single thread pool for some reason
-// or choose a larger value and idle extra threads. (evil)
+// run three work groups, one for each insertion sort
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) buffer ChunkData {
     uint numPoints;
@@ -11,46 +8,55 @@ layout(std430, binding = 0) buffer ChunkData {
 };
 
 layout(std430, binding = 1) buffer ChunkDataSort {
-    uint isort[]; // flattened: [0..numPoints-1] = x-indexes, [numPoints..2*numPoints-1] = y-indexes, [2*numPoints..3*numPoints-1] = z-indexes
+    uint isort[];
 };
 
-int binarySearch(int a[], int item,
-                int low, int high)
-{
-    if (high <= low)
-        return (item > a[low]) ?
-                (low + 1) : low;
-
-    int mid = (low + high) / 2;
-
-    if (item == a[mid])
-        return mid + 1;
-
-    if (item > a[mid])
-        return binarySearch(a, item,
-                            mid + 1, high);
-    return binarySearch(a, item, low,
-                        mid - 1);
+// binary search function. idk how tf this works, I got it from some random c++ tutorial and rewrote it in GLSL
+int binarySearch(uint offset, uint count, float value, uint axis) {
+    int low = 0;
+    int high = int(count) - 1;
+    while (low < high) {
+        int mid = (low + high) / 2;
+        uint idx = isort[offset + uint(mid)];
+        float coord = (axis == 0u) ? points[idx].x : (axis == 1u) ? points[idx].y : points[idx].z;
+        if (coord < value) low = mid + 1;
+        else high = mid;
+    }
+    return low;
 }
 
-int main()
-{
-    int i, loc, j, k, selected;
+// binary-insertion sort for one axis’ slice: [offset .. offset+n)
+void insertionSort(uint offset, uint n, int component) {
+    // insertion sort with binary search for the insert location.
+    for (uint i = 1u; i < n; ++i) {
+        uint selected = isort[offset + i];
 
-    for (i = 1; i < n; ++i)
-    {
-        j = i - 1;
-        selected = a[i];
+        int loc = binarySearch(offset, i, selected, component);
 
-        // find location where selected should be inserted
-        loc = binarySearch(a, selected, 0, j);
-
-        // Move all elements after location to create space
-        while (j >= loc)
-        {
-            a[j + 1] = a[j];
-            j--;
+        // shift right to make room
+        int j = int(offset + i) - 1;
+        while (j >= loc) {
+            isort[j + 1] = isort[j];
+            --j;
         }
-        a[j + 1] = selected;
+        isort[loc] = selected;
     }
+}
+
+void main() {
+    // one workgroup per axis.
+    uint axis = gl_WorkGroupID.x;
+    if (axis >= 3u) return;
+
+    // only one invocation per workgroup performs the sequential sort.
+    if (gl_LocalInvocationIndex != 0u) return;
+
+    uint offset = axis * numPoints;
+    int component = int(axis);
+
+    insertionSort(offset, numPoints, component);
+
+    // make results visible to subsequent passes
+    memoryBarrierBuffer();
+    barrier(); // local barrier
 }
