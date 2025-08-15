@@ -58,7 +58,8 @@ int main()
 
     // temp terrain compute shader, here for testing purposes.
     // calculate buffer size: 4 bytes for uint + max points * 16 bytes each
-    size_t maxPoints = 16 * 16 * 16;
+    uint16_t chunkSize = 32;
+    size_t maxPoints = chunkSize *chunkSize *chunkSize;
     // point cloud buffer
     size_t ssboSize0 = sizeof(GLuint) + maxPoints * sizeof(float)*4;
 
@@ -86,9 +87,9 @@ int main()
 
     // dispatch compute shader threads, based on thread pool size of 64.
     glDispatchCompute(
-        (16 + 4 - 1) / 4,
-        (16 + 4 - 1) / 4,
-        (16 + 4 - 1) / 4
+        (chunkSize + 4 - 1) / 4,
+        (chunkSize + 4 - 1) / 4,
+        (chunkSize + 4 - 1) / 4
     );
 
     // use point sorting compute shader
