@@ -58,7 +58,7 @@ int main()
 
     // temp terrain compute shader, here for testing purposes.
     // calculate buffer size: 4 bytes for uint + max points * 16 bytes each
-    uint16_t chunkSize = 32;
+    uint16_t chunkSize = 16;
     size_t maxPoints = chunkSize *chunkSize *chunkSize;
     // point cloud buffer
     size_t ssboSize0 = sizeof(GLuint) + maxPoints * sizeof(float)*4;

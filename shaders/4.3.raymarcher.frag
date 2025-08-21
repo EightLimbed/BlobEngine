@@ -5,7 +5,11 @@ uniform float iTime;
 
 layout(std430, binding = 0) buffer ChunkData {
     uint numPoints;
-    vec4 points[]; // .xyz = center, .w ignored
+    vec4 points[]; // .xyz = center, .w ignored for now
+};
+
+layout(std430, binding = 1) buffer ChunkDataSort {
+    uint isort[];
 };
 
 // camera shizzle
@@ -35,6 +39,9 @@ float intersectCube(vec3 ro, vec3 rd, vec3 boxMin, vec3 boxMax) {
 
 // main ray stuff (trying so hard not to call it marching)
 void main() {
+    // background
+    FragColor = vec4(0.1,0.1,0.1,1.0);
+    
     // camera setup
     float radius = 5.0;
     float angle = iTime * 0.6;
@@ -42,25 +49,26 @@ void main() {
     vec3 lookAt = vec3(0.0, 0.0, 0.0);
     vec3 rd = getRayDir(gl_FragCoord.xy, vec2(800,600), ro, lookAt, 1.0);
 
-    // find closest cube intersection
-    float closestT = 1e6;
+    // dominant axis calculations
+    uint axis = (rd.x >= rd.y && rd.x >= rd.z) ? 0 : ((rd.y >= rd.z) ? 1 : 2);
+    int order = int(sign(rd[axis]));
+    uint start = (order == 1) ? axis*numPoints : (axis+1u)*numPoints;
+    uint end = (order == 1) ? (axis+1u)*numPoints : axis*numPoints;
+
+
+    // find closest intersection by iterating along dominant axises sorted index array
     vec3 hitPos = vec3(0.0);
-    for (int i = 0; i < numPoints; i++) {
-        vec3 center = points[i].xyz;
-        vec3 halfSize = vec3(0.032); // cube half-size
+    for (uint i = start; (order == 1) ? i < end : i > end; (order == 1) ? i++ : i--) {
+        vec3 center = points[isort[i]].xyz;
+        vec3 halfSize = vec3(0.064); // cube half-size
         vec3 boxMin = center - halfSize;
         vec3 boxMax = center + halfSize;
 
         float t = intersectCube(ro, rd, boxMin, boxMax);
-        if (t > 0.0 && t < closestT) {
-            closestT = t;
+        if (t > 0.0) {
             hitPos = ro + rd * t;
+            FragColor = vec4(abs(hitPos), 1.0); // shade based on hit
+            break;
         }
-    }
-
-    if (closestT < 1e6) {
-        FragColor = vec4(abs(hitPos), 1.0); // shade based on hit
-    } else {
-        FragColor = vec4(0.1,0.1,0.1,1.0); // background
     }
 }
