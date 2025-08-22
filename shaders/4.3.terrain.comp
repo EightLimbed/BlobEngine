@@ -11,6 +11,10 @@ layout(std430, binding = 1) buffer ChunkDataSort {
     uint isort[];
 };
 
+layout(std430, binding = 1) buffer ChunkDataSort {
+    uint isort[];
+};
+
 // helper functions
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -87,16 +91,16 @@ float noise2D(vec2 v) {
 
 void main() {
     uvec3 id = gl_GlobalInvocationID;
-    const uint CHUNK_SIZE = 16u;
+    const uint CHUNK_SIZE = 32u;
     const uint MAX_POINTS = CHUNK_SIZE *CHUNK_SIZE *CHUNK_SIZE; // 4096 total possible points
 
     if (id.x >= CHUNK_SIZE || id.y >= CHUNK_SIZE || id.z >= CHUNK_SIZE) return;
 
-    if (noise2D(vec2(id.x, id.z)/4.0) * 16.0 > float(id.y)) {
+    if (noise2D(vec2(id.x, id.z)/2.0) * 16.0 > float(id.y)) {
         // atomic add makes sure threads don't overwrite eachother
         uint newIndex = atomicAdd(numPoints, 1u);
         if (newIndex < MAX_POINTS) {
-            points[newIndex] = vec4(vec3(id-8.0)/8.0, 9.0);
+            points[newIndex] = vec4(vec3(id-16.0)/16.0, 9.0);
             // fills index array
             uint posi = id.z + 16u * (id.y + CHUNK_SIZE * id.x);
             isort[newIndex+2*numPoints] = posi;
