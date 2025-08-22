@@ -49,18 +49,17 @@ int main()
     // ------------------------------------
     Shader ScreenShaders("shaders/4.3.screenquad.vert", "shaders/4.3.raymarcher.frag");
     Shader TerrainShader("shaders/4.3.terrain.comp");
-    Shader SortShader("shaders/4.3.pointsort.comp");
 
-    // vaos need to be bound because of biolerplating shizzle (even if not used)
+    // vaos need to be bound because of boilerplating shizzle (even if not used)
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
     // temp terrain compute shader, here for testing purposes.
-    // calculate buffer size: 4 bytes for uint + max points * 16 bytes each
     uint16_t chunkSize = 32;
     size_t maxPoints = chunkSize *chunkSize *chunkSize;
-    // point cloud buffer
+
+    // calculate buffer size: 4 bytes for uint + max points * 16 bytes each
     size_t ssboSize0 = sizeof(GLuint) + maxPoints * sizeof(float)*4;
 
     GLuint ssbo0;
@@ -73,30 +72,15 @@ int main()
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo0);
 
-    // sorted indices buffer
-    size_t ssboSize1 = maxPoints * sizeof(GLuint) * 3;
-    GLuint ssbo1;
-    glGenBuffers(1, &ssbo1);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo1);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, ssboSize1, nullptr, GL_DYNAMIC_DRAW);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo1);
-
     // use terrain compute shader
     TerrainShader.use();
 
-    // dispatch compute shader threads, based on thread pool size of 64.
+    // dispatch terrain compute shader threads, based on thread pool size of 64
     glDispatchCompute(
         (chunkSize + 4 - 1) / 4,
         (chunkSize + 4 - 1) / 4,
         (chunkSize + 4 - 1) / 4
     );
-
-    // use point sorting compute shader
-    SortShader.use();
-
-    // dispatch compute shader threads, exactly three (one for each axis being sorted)
-    glDispatchCompute(3, 1, 1);
 
     // compute error check
     GLenum err = glGetError();
